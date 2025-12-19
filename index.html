@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DataURL/Blob 转下载链接工具</title>
+    <link rel="stylesheet" href="/misc-styles-code.css">
+</head>
+<body>
+    <div class="container">
+        <h1>DataURL/Blob/Base64 转下载链接工具</h1>
+        
+        <div class="input-section">
+            <label for="dataurl-input">输入 DataURL/Blob/Base64 链接:</label>
+            <textarea id="dataurl-input" placeholder="例如: data:text/plain;base64,SGVsbG8gV29ybGQ="></textarea>
+        </div>
+        
+        <div class="button-row">
+            <button id="parse-btn">解析</button>
+            
+            <label class="file-input-label">
+                <input type="file" id="file-input" accept=".txt,.text">
+                <button type="button" id="parse-file-btn">解析文件</button>
+            </label>
+            
+            <button id="clear-btn" class="hidden">清除</button>
+        </div>
+        
+        <div class="files-list">
+            <h3>已解析文件列表:</h3>
+            <div id="files-container">
+                <div class="no-files">暂无解析的文件</div>
+            </div>
+        </div>
+        
+        <div class="convert-section">
+            <h3>文件转链接功能:</h3>
+            
+            <div class="convert-row" style="margin-bottom: 0;">
+                <label class="file-input-label">
+                    <input type="file" id="convert-file-input">
+                    <button type="button" id="select-file-btn">选择文件</button>
+                </label>
+                <span id="selected-file-name" class="selected-file">未选择文件</span>
+            </div>
+            
+            <div class="convert-row">
+                <button id="to-dataurl-btn" style="margin-top: 5px;">DataURL</button>
+                <button id="to-blob-btn" style="margin-top: 5px;">Blob</button>
+                <button id="to-base64-btn" style="margin-top: 5px;">Base64</button>
+            </div>
+            
+            <div class="save-option">
+                <label>
+                    <input type="checkbox" id="save-as-file">
+                    保存为文本文件（勾选后点击上方按钮将保存为.txt文件）
+                </label>
+            </div>
+        </div>
+        
+        <!-- Toast提示 -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="/miscscript.js"></script>
+</body>
+</html>

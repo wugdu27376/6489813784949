@@ -1,0 +1,232 @@
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 20px;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 600px;
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+h1 {
+    margin-top: 0;
+    color: #333;
+    font-size: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.input-section {
+    margin-bottom: 10px;
+}
+
+#dataurl-input {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.button-row {
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.button-row button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+    float: left;
+}
+
+.button-row::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+button {
+    padding: 8px 13px;
+    border: none;
+    border-radius: 3px;
+    background-color: #4a6ee0;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3a5ed0;
+}
+
+.hidden {
+    display: none;
+}
+
+.files-list {
+    border-top: 1px solid #eee;
+    padding-top: 5px;
+}
+
+.file-item {
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+.file-name {
+    float: left;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 10px;
+    line-height: 30px;
+}
+
+.file-actions {
+    float: right;
+}
+
+.file-actions button {
+    margin-left: 8px;
+}
+
+.file-item::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.file-item button {
+    padding: 5px 10px;
+    font-size: 13px;
+}
+
+.delete-btn {
+    background-color: #e05a5a;
+}
+
+.delete-btn:hover {
+    background-color: #d04a4a;
+}
+
+.no-files {
+    text-align: center;
+    color: #888;
+    padding: 14px;
+    border: 1px dashed #ddd;
+    border-radius: 3px;
+}
+
+.info-text {
+    color: #666;
+    font-size: 13px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+.file-input-label {
+    display: inline-block;
+    float: left;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.convert-section {
+    border-top: 1px solid #eee;
+    padding-top: 5px;
+    margin-top: 20px;
+}
+
+.convert-row {
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.convert-row button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+    float: left;
+}
+
+.selected-file {
+    float: left;
+    line-height: 34px;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.save-option {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    background-color: #f9f9f9;
+}
+
+.save-option input[type="checkbox"] {
+    margin: 0; /* 移除默认外边距 */
+    margin-top: -2.3px;
+    margin-left: 2px;
+    vertical-align: middle; /* 垂直对齐 */
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 3px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    max-width: 80%;
+    text-align: center;
+}
+
+.toast.show {
+    opacity: 0.9;
+}
+
+.toast.hidden {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    #dataurl-input {
+        height: 150px;
+    }
+    .no-files {
+        padding: 30px;
+    }
+}
