@@ -15,12 +15,12 @@ function parseDataURL(url) {
     if (url.indexOf('blob:') === 0) {
         return parseBlobURL(url);
     }
-    
+
     // 检查是否是data URL
     if (url.indexOf('data:') === 0) {
         return parseDataURI(url);
     }
-    
+
     // 检查是否是base64数据（可能没有data:前缀）
     if (url.indexOf('base64,') !== -1) {
         // 尝试添加data:前缀
@@ -29,7 +29,13 @@ function parseDataURL(url) {
         }
         return parseDataURI(url);
     }
-    
+
+    // 尝试作为纯base64数据（没有base64,标识符）
+    if (isBase64Data(url)) {
+        url = 'data:application/octet-stream;base64,' + url;
+        return parseDataURI(url);
+    }
+
     // 尝试作为纯文本处理
     return {
         name: generateRandomTenDigits() + '.txt',
@@ -38,13 +44,37 @@ function parseDataURL(url) {
     };
 }
 
+// 检查是否是base64数据
+function isBase64Data(str) {
+    // 移除可能的空白字符
+    var cleanStr = str.trim();
+
+    // base64通常包含A-Z, a-z, 0-9, +, /, =，长度是4的倍数
+    if (cleanStr.length % 4 !== 0) {
+        return false;
+    }
+
+    // 检查字符集
+    var base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(cleanStr)) {
+        return false;
+    }
+
+    // 基本长度检查（至少几个字符）
+    if (cleanStr.length < 4) {
+        return false;
+    }
+
+    return true;
+}
+
 // 解析Blob URL
 function parseBlobURL(blobURL) {
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', blobURL, true);
         xhr.responseType = 'blob';
-        
+
         xhr.onload = function() {
             if (this.status === 200) {
                 var blob = this.response;
@@ -55,7 +85,7 @@ function parseBlobURL(blobURL) {
                     var ext = getExtensionFromMimeType(blob.type);
                     fileName = randomNum + '.' + ext;
                 }
-                
+
                 var reader = new FileReader();
                 reader.onload = function() {
                     resolve({
@@ -70,7 +100,7 @@ function parseBlobURL(blobURL) {
                 reject(new Error('获取blob数据失败'));
             }
         };
-        
+
         xhr.onerror = reject;
         xhr.send();
     });
@@ -83,16 +113,16 @@ function parseDataURI(dataURI) {
     if (!matches) {
         throw new Error('无效的Data URI格式');
     }
-    
+
     var mimeType = matches[1] || 'application/octet-stream';
     var isBase64 = !!matches[2];
     var data = matches[3];
-    
+
     // 获取文件名（使用随机十位数字）
     var randomNum = generateRandomTenDigits();
     var ext = getExtensionFromMimeType(mimeType);
     var fileName = ext ? randomNum + '.' + ext : randomNum;
-    
+
     // 如果已经是base64数据，直接返回
     if (isBase64) {
         return {
@@ -101,7 +131,7 @@ function parseDataURI(dataURI) {
             type: mimeType
         };
     }
-    
+
     // 如果不是base64，则可能需要编码
     return {
         name: fileName,
@@ -128,7 +158,7 @@ function getExtensionFromMimeType(mimeType) {
         'video/mp4': 'mp4',
         'application/zip': 'zip'
     };
-    
+
     return mimeMap[mimeType] || 'bin';
 }
 
@@ -145,7 +175,7 @@ function generateRandomTenDigits() {
 function generateUniqueName(baseName, index) {
     var dotIndex = baseName.lastIndexOf('.');
     var name, ext;
-    
+
     if (dotIndex === -1) {
         name = baseName;
         ext = '';
@@ -153,7 +183,7 @@ function generateUniqueName(baseName, index) {
         name = baseName.substring(0, dotIndex);
         ext = baseName.substring(dotIndex);
     }
-    
+
     return index > 0 ? name + '(' + index + ')' + ext : baseName;
 }
 
@@ -172,12 +202,12 @@ function addFileToList(fileInfo) {
     // 检查文件名是否已存在，避免重复
     var fileName = fileInfo.name;
     var counter = 0;
-    
+
     while (fileNameExists(fileName)) {
         counter++;
         fileName = generateUniqueName(fileInfo.name, counter);
     }
-    
+
     fileInfo.name = fileName;
     files.push(fileInfo);
     renderFilesList();
@@ -186,31 +216,31 @@ function addFileToList(fileInfo) {
 // 渲染文件列表
 function renderFilesList() {
     filesContainer.innerHTML = '';
-    
+
     if (files.length === 0) {
         filesContainer.innerHTML = '<div class="no-files">暂无解析的文件</div>';
         clearBtn.className = 'hidden';
         return;
     }
-    
+
     // 显示清除按钮
     clearBtn.className = '';
-    
+
     // 渲染每个文件项
     for (var i = 0; i < files.length; i++) {
         var file = files[i];
         var fileItem = document.createElement('div');
         fileItem.className = 'file-item';
-        
-        fileItem.innerHTML = '<div class="file-name" title="' + file.name + '">' + file.name + 
+
+        fileItem.innerHTML = '<div class="file-name" title="' + file.name + '">' + file.name +
             '</div><div class="file-actions">' +
             '<button class="download-btn" data-index="' + i + '">下载</button>' +
             '<button class="delete-btn" data-index="' + i + '">删除</button>' +
             '</div>';
-        
+
         filesContainer.appendChild(fileItem);
     }
-    
+
     // 添加下载和删除事件监听器
     var downloadBtns = document.querySelectorAll('.download-btn');
     for (var j = 0; j < downloadBtns.length; j++) {
@@ -219,7 +249,7 @@ function renderFilesList() {
             downloadFile(index);
         });
     }
-    
+
     var deleteBtns = document.querySelectorAll('.delete-btn');
     for (var k = 0; k < deleteBtns.length; k++) {
         deleteBtns[k].addEventListener('click', function() {
@@ -232,12 +262,12 @@ function renderFilesList() {
 // 下载文件
 function downloadFile(index) {
     var file = files[index];
-    
+
     // 创建下载链接
     var link = document.createElement('a');
     link.href = file.data;
     link.download = file.name;
-    
+
     // 触发下载
     document.body.appendChild(link);
     link.click();
@@ -261,29 +291,29 @@ function clearAll() {
 // 解析文本文件中的链接
 function parseTextFile(file) {
     var reader = new FileReader();
-    
+
     reader.onload = function(event) {
         var content = event.target.result;
         var lines = content.split('\n');
         var validLines = [];
-        
+
         // 过滤空行
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].trim() !== '') {
                 validLines.push(lines[i].trim());
             }
         }
-        
+
         if (validLines.length === 0) {
             return;
         }
-        
+
         // 解析每一行
         for (var j = 0; j < validLines.length; j++) {
             try {
                 var line = validLines[j];
                 var fileInfo = parseDataURL(line);
-                
+
                 // 如果是Promise，需要等待
                 if (fileInfo && fileInfo.then) {
                     fileInfo.then(function(info) {
@@ -300,23 +330,22 @@ function parseTextFile(file) {
             }
         }
     };
-    
+
     reader.readAsText(file);
 }
 
-// 解析按钮点击事件
 parseBtn.addEventListener('click', function() {
     var inputText = dataurlInput.value;
-    
+
     if (!inputText.trim()) {
         showToast('请输入链接');
         return;
     }
-    
+
     // 分割多行链接
     var lines = inputText.split('\n');
     var validLines = [];
-    
+
     // 过滤空行
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
@@ -324,21 +353,21 @@ parseBtn.addEventListener('click', function() {
             validLines.push(line);
         }
     }
-    
+
     if (validLines.length === 0) {
         showToast('请输入有效的链接');
         return;
     }
-    
+
     // 解析每一行链接
     var successCount = 0;
     var errorCount = 0;
-    
+
     for (var j = 0; j < validLines.length; j++) {
         try {
             var line = validLines[j];
             var fileInfo = parseDataURL(line);
-            
+
             // 如果是Promise，需要等待
             if (fileInfo && fileInfo.then) {
                 fileInfo.then(function(info) {
@@ -392,16 +421,16 @@ fileInput.addEventListener('change', function() {
     if (this.files.length === 0) {
         return;
     }
-    
+
     var file = this.files[0];
-    
+
     // 检查是否是文本文件
     if (file.type.indexOf('text/') !== 0 && file.name.lastIndexOf('.txt') !== file.name.length - 4) {
         showToast('请选择文本文件');
         this.value = '';
         return;
     }
-    
+
     parseTextFile(file);
     this.value = '';
 });
@@ -413,11 +442,11 @@ var toastTimer = null;
 function showToast(message) {
     toast.textContent = message;
     toast.className = 'toast show';
-    
+
     if (toastTimer) {
         clearTimeout(toastTimer);
     }
-    
+
     toastTimer = setTimeout(function() {
         toast.className = 'toast';
     }, 2000);
@@ -458,11 +487,11 @@ convertFileInput.addEventListener('change', function() {
         selectFileBtn.textContent = '选择文件';
         return;
     }
-    
+
     selectedFile = this.files[0];
     selectedFileName.textContent = selectedFile.name;
     selectFileBtn.textContent = '删除文件';
-    
+
     // 读取文件为DataURL
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -478,10 +507,12 @@ function convertToDataURL() {
         showToast('请先选择文件');
         return;
     }
-    
+
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([fileDataUrl], {type: 'text/plain'});
+        var blob = new Blob([fileDataUrl], {
+            type: 'text/plain'
+        });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
@@ -520,12 +551,14 @@ function convertToBlob() {
         showToast('请先选择文件');
         return;
     }
-    
+
     var blobUrl = URL.createObjectURL(selectedFile);
-    
+
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([blobUrl], {type: 'text/plain'});
+        var blob = new Blob([blobUrl], {
+            type: 'text/plain'
+        });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
@@ -564,17 +597,19 @@ function convertToBase64() {
         showToast('请先选择文件');
         return;
     }
-    
+
     // 从DataURL中提取base64部分
     var base64Data = fileDataUrl.split(',')[1];
     if (!base64Data) {
         showToast('无法提取base64数据');
         return;
     }
-    
+
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([base64Data], {type: 'text/plain'});
+        var blob = new Blob([base64Data], {
+            type: 'text/plain'
+        });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
