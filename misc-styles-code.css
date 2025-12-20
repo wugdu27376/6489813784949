@@ -72,6 +72,7 @@ button {
     color: white;
     font-size: 14px;
     cursor: pointer;
+    outline: none;
 }
 
 button:hover {
