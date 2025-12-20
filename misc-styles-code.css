@@ -202,6 +202,10 @@ input[type="file"] {
     position: fixed;
     top: 20px;
     left: 50%;
+    -webkit-transform: translateX(-50%);
+    -moz-transform: translateX(-50%);
+    -ms-transform: translateX(-50%);
+    -o-transform: translateX(-50%);
     transform: translateX(-50%);
     background-color: #333;
     color: white;
@@ -209,6 +213,9 @@ input[type="file"] {
     border-radius: 3px;
     z-index: 1000;
     opacity: 0;
+    -webkit-transition: opacity 0.3s;
+    -moz-transition: opacity 0.3s;
+    -o-transition: opacity 0.3s;
     transition: opacity 0.3s;
     max-width: 80%;
     text-align: center;
