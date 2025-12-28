@@ -226,10 +226,6 @@ input[type="file"] {
     opacity: 0.9;
 }
 
-.toast.hidden {
-    display: none;
-}
-
 @media (min-width: 768px) {
     #dataurl-input {
         height: 150px;

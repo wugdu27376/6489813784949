@@ -5,6 +5,8 @@ var parseFileBtn = document.getElementById('parse-file-btn');
 var fileInput = document.getElementById('file-input');
 var clearBtn = document.getElementById('clear-btn');
 var filesContainer = document.getElementById('files-container');
+var toJsonBtn = document.getElementById('to-json-btn');
+var toJson2Btn = document.getElementById('to-json2-btn');
 
 // 存储已解析的文件
 var files = [];
@@ -15,11 +17,40 @@ function parseDataURL(url) {
     if (url.indexOf('blob:') === 0) {
         return parseBlobURL(url);
     }
-
-    // 检查是否是data URL
-    if (url.indexOf('data:') === 0) {
-        return parseDataURI(url);
+    
+    if (url.indexOf('{') === 0 || url.indexOf('[') === 0) {
+       try {
+            var jsonData = JSON.parse(url);
+            if (jsonData && jsonData.data) {
+                return parseJsonData(jsonData);
+            }
+        } catch (e) {
+            // 不是有效的JSON，继续其他格式检查
+        }
     }
+    
+    // 检查URL片段中的JSON2格式
+    if (url.indexOf('#') !== -1) {
+        try {
+            var fragment = decodeURIComponent(url.split('#')[1]);
+            if (fragment.indexOf('{"files":') === 0 || fragment.indexOf('{"files":') > 0) {
+                return parseJson2Data(fragment);
+            }
+        } catch (e) {
+            // 不是有效的JSON(2)，继续其他格式检查
+        }
+    }
+    
+// 检查是否是data URL（包括从文本文件导入的编码过的DataURL）
+if (url.indexOf('data:') === 0 || url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
+    // 如果是编码过的DataURL（从保存的文件中导入）
+    if (url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
+        // 提取真正的DataURL部分
+        var decodedUrl = decodeURIComponent(url.replace('data:text/plain;charset=utf-8,', ''));
+        return parseDataURI(decodedUrl);
+    }
+    return parseDataURI(url);
+}
 
     // 检查是否是base64数据（可能没有data:前缀）
     if (url.indexOf('base64,') !== -1) {
@@ -44,10 +75,85 @@ function parseDataURL(url) {
     };
 }
 
+// 在miscscript.js中，parseDataURI函数后添加parseJsonData函数
+function parseJsonData(jsonData) {
+    var fileName = jsonData.filename || generateRandomTenDigits();
+    var data = jsonData.data;
+    var mimeType = jsonData.type || 'application/octet-stream';
+    
+    // 检查数据是否是base64格式
+    if (typeof data === 'string' && (data.indexOf('data:') === 0 || isBase64Data(data))) {
+        // 如果是DataURL或base64数据
+        if (data.indexOf('data:') === 0) {
+            // 已经是DataURL格式
+            return {
+                name: fileName,
+                data: data,
+                type: mimeType
+            };
+        } else {
+            // 是base64数据，转换为DataURL
+            return {
+                name: fileName,
+                data: 'data:' + mimeType + ';base64,' + data,
+                type: mimeType
+            };
+        }
+    } else {
+        // 纯文本数据
+        return {
+            name: fileName + '.txt',
+            data: 'data:text/plain;charset=utf-8,' + encodeURIComponent(String(data)),
+            type: 'text/plain'
+        };
+    }
+}
+
+function parseJson2Data(jsonStr) {
+    try {
+        var jsonData = JSON.parse(jsonStr);
+        if (jsonData && jsonData.files && jsonData.files.length > 0) {
+            var fileInfo = jsonData.files[0];
+            var fileName = fileInfo.name || generateRandomTenDigits();
+            var data = fileInfo.data;
+            var mimeType = fileInfo.type || 'application/octet-stream';
+            
+            // 将base64数据转换为DataURL
+            var dataUrl = 'data:' + mimeType + ';base64,' + data;
+            
+            return {
+                name: fileName,
+                data: dataUrl,
+                type: mimeType
+            };
+        }
+    } catch (e) {
+        throw new Error('无效的JSON(2)格式');
+    }
+    throw new Error('无效的JSON(2)数据');
+}
+
 // 检查是否是base64数据
 function isBase64Data(str) {
     // 移除可能的空白字符
     var cleanStr = str.trim();
+    
+    // 如果是URL编码的数据，先解码
+    if (cleanStr.indexOf('%') !== -1) {
+        try {
+            cleanStr = decodeURIComponent(cleanStr);
+        } catch (e) {
+            // 解码失败，使用原始字符串
+        }
+    }
+    
+    // 检查是否包含DataURL前缀，如果有则提取base64部分
+    if (cleanStr.indexOf('base64,') !== -1) {
+        var parts = cleanStr.split('base64,');
+        if (parts.length > 1) {
+            cleanStr = parts[1];
+        }
+    }
 
     // base64通常包含A-Z, a-z, 0-9, +, /, =，长度是4的倍数
     if (cleanStr.length % 4 !== 0) {
@@ -260,15 +366,43 @@ function renderFilesList() {
 }
 
 // 下载文件
+// 在miscscript.js中，修改downloadFile函数的第172行附近
 function downloadFile(index) {
     var file = files[index];
-
-    // 创建下载链接
+    
+    // 检查是否是JSON(2)格式的URL
+    if (file.data.indexOf('#') !== -1 && file.data.indexOf('{"files":') !== -1) {
+        try {
+            // 从URL片段中提取JSON数据
+            var fragment = decodeURIComponent(file.data.split('#')[1]);
+            var jsonData = JSON.parse(fragment);
+            
+            if (jsonData && jsonData.files && jsonData.files.length > 0) {
+                var fileInfo = jsonData.files[0];
+                var data = fileInfo.data;
+                var mimeType = fileInfo.type || 'application/octet-stream';
+                var fileName = fileInfo.name || 'downloaded_file';
+                
+                // 将base64数据转换为DataURL进行下载
+                var dataUrl = 'data:' + mimeType + ';base64,' + data;
+                var link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
+            }
+        } catch (e) {
+            // 如果解析失败，使用原始方式下载
+            console.error('解析JSON(2)失败:', e);
+        }
+    }
+    
+    // 普通文件下载
     var link = document.createElement('a');
     link.href = file.data;
     link.download = file.name;
-
-    // 触发下载
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -424,13 +558,16 @@ fileInput.addEventListener('change', function() {
 
     var file = this.files[0];
 
-    // 检查是否是文本文件
-    if (file.type.indexOf('text/') !== 0 && file.name.lastIndexOf('.txt') !== file.name.length - 4) {
-        showToast('请选择文本文件');
+    // 检查是否是文本文件或JSON文件
+    var isTextFile = file.type.indexOf('text/') === 0;
+    var isTxtFile = file.name.lastIndexOf('.txt') === file.name.length - 4;
+    var isJsonFile = file.name.lastIndexOf('.json') === file.name.length - 5;
+    if (!isTextFile && !isTxtFile && !isJsonFile) {
+        showToast('请选择文本文件或JSON文件');
         this.value = '';
         return;
     }
-
+    
     parseTextFile(file);
     this.value = '';
 });
@@ -441,6 +578,7 @@ var toastTimer = null;
 
 function showToast(message) {
     toast.textContent = message;
+    toast.classList.remove('hidden');
     toast.className = 'toast show';
 
     if (toastTimer) {
@@ -510,36 +648,38 @@ function convertToDataURL() {
 
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([fileDataUrl], {
-            type: 'text/plain'
-        });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = selectedFile.name + '.dataurl.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        var base64Data = btoa(unescape(encodeURIComponent(fileDataUrl)));
+        var dataStr = "data:text/plain;base64," + base64Data;
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", selectedFile.name + '.dataurl.txt');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
         showToast('DataURL已保存为文件');
     } else {
         // 显示在prompt中
         var result = prompt('DataURL链接:', fileDataUrl);
-        if (result) {
-            // 尝试复制到剪贴板
-            if (document.execCommand) {
-                var textarea = document.createElement('textarea');
-                textarea.value = fileDataUrl;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
+        if (result !== null) {
+            // 用户没有点击取消
+            try {
+                navigator.clipboard.writeText(fileDataUrl).then(function() {
                     showToast('DataURL已复制到剪贴板');
-                } catch (err) {
-                    showToast('DataURL已生成');
-                }
-                document.body.removeChild(textarea);
-            } else {
+                }).catch(function(err) {
+                    // 如果clipboard API失败，使用传统方法
+                    if (document.execCommand) {
+                        var textarea = document.createElement('textarea');
+                        textarea.value = fileDataUrl;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showToast('DataURL已复制到剪贴板');
+                    } else {
+                        showToast('DataURL已生成');
+                    }
+                });
+            } catch (err) {
                 showToast('DataURL已生成');
             }
         }
@@ -556,36 +696,38 @@ function convertToBlob() {
 
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([blobUrl], {
-            type: 'text/plain'
-        });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = selectedFile.name + '.bloburl.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        var base64Data = btoa(unescape(encodeURIComponent(blobUrl)));
+        var dataStr = "data:text/plain;base64," + base64Data;
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", selectedFile.name + '.bloburl.txt');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
         showToast('Blob URL已保存为文件');
     } else {
         // 显示在prompt中
         var result = prompt('Blob URL链接:', blobUrl);
-        if (result) {
-            // 尝试复制到剪贴板
-            if (document.execCommand) {
-                var textarea = document.createElement('textarea');
-                textarea.value = blobUrl;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
+        if (result !== null) {
+            // 用户没有点击取消
+            try {
+                navigator.clipboard.writeText(blobUrl).then(function() {
                     showToast('Blob URL已复制到剪贴板');
-                } catch (err) {
-                    showToast('Blob URL已生成');
-                }
-                document.body.removeChild(textarea);
-            } else {
+                }).catch(function(err) {
+                    // 如果clipboard API失败，使用传统方法
+                    if (document.execCommand) {
+                        var textarea = document.createElement('textarea');
+                        textarea.value = blobUrl;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showToast('Blob URL已复制到剪贴板');
+                    } else {
+                        showToast('Blob URL已生成');
+                    }
+                });
+            } catch (err) {
                 showToast('Blob URL已生成');
             }
         }
@@ -607,40 +749,193 @@ function convertToBase64() {
 
     if (saveAsFileCheckbox.checked) {
         // 保存为文本文件
-        var blob = new Blob([base64Data], {
-            type: 'text/plain'
-        });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = selectedFile.name + '.base64.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        var encodedBase64 = btoa(unescape(encodeURIComponent(base64Data)));
+        var dataStr = "data:text/plain;base64," + encodedBase64;
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", selectedFile.name + '.base64.txt');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
         showToast('Base64已保存为文件');
     } else {
         // 显示在prompt中
         var result = prompt('Base64数据:', base64Data);
-        if (result) {
-            // 尝试复制到剪贴板
-            if (document.execCommand) {
-                var textarea = document.createElement('textarea');
-                textarea.value = base64Data;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
+        if (result !== null) {
+            // 用户没有点击取消
+            try {
+                navigator.clipboard.writeText(base64Data).then(function() {
                     showToast('Base64已复制到剪贴板');
-                } catch (err) {
-                    showToast('Base64已生成');
-                }
-                document.body.removeChild(textarea);
-            } else {
+                }).catch(function(err) {
+                    // 如果clipboard API失败，使用传统方法
+                    if (document.execCommand) {
+                        var textarea = document.createElement('textarea');
+                        textarea.value = base64Data;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showToast('Base64已复制到剪贴板');
+                    } else {
+                        showToast('Base64已生成');
+                    }
+                });
+            } catch (err) {
                 showToast('Base64已生成');
             }
         }
     }
+}
+
+function convertToJson() {
+    if (!selectedFile) {
+        showToast('请先选择文件');
+        return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var content = e.target.result;
+        var jsonObject = {
+            filename: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type,
+            lastModified: selectedFile.lastModified,
+            data: null
+        };
+
+        // 根据文件类型处理数据
+        if (selectedFile.type.indexOf('text/') === 0 || 
+            selectedFile.type === 'application/json' ||
+            selectedFile.name.endsWith('.txt') ||
+            selectedFile.name.endsWith('.json')) {
+            // 文本文件直接包含内容
+            jsonObject.data = content;
+        } else {
+            // 二进制文件转换为base64
+            var dataUrlReader = new FileReader();
+            dataUrlReader.onload = function(dataEvent) {
+                jsonObject.data = dataEvent.target.result.split(',')[1] || dataEvent.target.result;
+                finishJsonConversion(jsonObject);
+            };
+            dataUrlReader.readAsDataURL(selectedFile);
+            return;
+        }
+
+        finishJsonConversion(jsonObject);
+    };
+
+    function finishJsonConversion(jsonObject) {
+        var jsonString = JSON.stringify(jsonObject);
+        
+        if (saveAsFileCheckbox.checked) {
+            var base64Data = btoa(unescape(encodeURIComponent(jsonString)));
+            var dataStr = "data:application/json;base64," + base64Data;
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", selectedFile.name + '.json');
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast('JSON已保存为文件');
+        } else {
+            // 显示在prompt中
+            var result = prompt('JSON数据:', jsonString);
+            if (result !== null) {
+                // 用户没有点击取消
+                try {
+                    navigator.clipboard.writeText(jsonString).then(function() {
+                        showToast('JSON已复制到剪贴板');
+                    }).catch(function(err) {
+                        // 如果clipboard API失败，使用传统方法
+                        if (document.execCommand) {
+                            var textarea = document.createElement('textarea');
+                            textarea.value = jsonString;
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textarea);
+                            showToast('JSON已复制到剪贴板');
+                        } else {
+                            showToast('JSON已生成');
+                        }
+                    });
+                } catch (err) {
+                    showToast('JSON已生成');
+                }
+            }
+        }
+    }
+
+    reader.readAsText(selectedFile);
+}
+
+// 在miscscript.js中，convertToJson函数后添加convertToJson2函数
+function convertToJson2() {
+    if (!selectedFile) {
+        showToast('请先选择文件');
+        return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var fileData = [{
+            name: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type,
+            lastModified: selectedFile.lastModified,
+            data: e.target.result.split(',')[1]
+        }];
+        
+        var data = {
+            files: fileData
+        };
+        var dataStr = JSON.stringify(data);
+        var currentUrl = window.location.href.split('#')[0];
+        var jsonUrl = currentUrl + '#' + encodeURIComponent(dataStr);
+
+        if (saveAsFileCheckbox.checked) {
+            // 保存为文件
+            var base64Data = btoa(unescape(encodeURIComponent(jsonUrl)));
+            var downloadDataStr = "data:application/json;base64," + base64Data;
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", downloadDataStr);
+            downloadAnchorNode.setAttribute("download", selectedFile.name + '.json2.txt');
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast('JSON2已保存为文件');
+        } else {
+            // 显示在prompt中
+            var result = prompt('JSON2链接:', jsonUrl);
+            if (result !== null) {
+                // 用户没有点击取消
+                var textToCopy = result === jsonUrl ? jsonUrl : result;
+                try {
+                    navigator.clipboard.writeText(textToCopy).then(function() {
+                        showToast('JSON2已复制到剪贴板');
+                    }).catch(function(err) {
+                        // 如果clipboard API失败，使用传统方法
+                        if (document.execCommand) {
+                            var textarea = document.createElement('textarea');
+                            textarea.value = textToCopy;
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textarea);
+                            showToast('JSON2已复制到剪贴板');
+                        } else {
+                            showToast('JSON2已生成');
+                        }
+                    });
+                } catch (err) {
+                    showToast('JSON2已生成');
+                }
+            }
+        }
+    };
+    
+    reader.readAsDataURL(selectedFile);
 }
 
 // 加载保存的勾选状态
@@ -658,6 +953,8 @@ saveAsFileCheckbox.addEventListener('change', function() {
 toDataurlBtn.addEventListener('click', convertToDataURL);
 toBlobBtn.addEventListener('click', convertToBlob);
 toBase64Btn.addEventListener('click', convertToBase64);
+toJsonBtn.addEventListener('click', convertToJson);
+toJson2Btn.addEventListener('click', convertToJson2);
 
 clearBtn.addEventListener('click', clearAll);
 

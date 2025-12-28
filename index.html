@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DataURL/Blob 转下载链接工具</title>
-    <link rel="stylesheet" href="/dataurltolink/misc-styles-code.css">
+    <link rel="stylesheet" href="misc-styles-code.css">
 </head>
 <body>
     <div class="container">
@@ -19,7 +19,7 @@
             <button id="parse-btn">解析</button>
             
             <label class="file-input-label">
-                <input type="file" id="file-input" accept=".txt,.text">
+                <input type="file" id="file-input" accept=".txt,.text,.json" multiple>
                 <button type="button" id="parse-file-btn">解析文件</button>
             </label>
             
@@ -48,20 +48,22 @@
                 <button id="to-dataurl-btn" style="margin-top: 5px;">DataURL</button>
                 <button id="to-blob-btn" style="margin-top: 5px;">Blob</button>
                 <button id="to-base64-btn" style="margin-top: 5px;">Base64</button>
+                <button id="to-json-btn" style="margin-top: 5px;">JSON</button>
+                <button id="to-json2-btn" style="margin-top: 5px;">JSON2</button>
             </div>
             
             <div class="save-option">
                 <label>
                     <input type="checkbox" id="save-as-file">
-                    保存为文本文件（勾选后点击上方按钮将保存为.txt文件）
+                    保存为文本文件（勾选后点击上方按钮将保存为文本文件。若文件过大可以启用）
                 </label>
             </div>
         </div>
         
         <!-- Toast提示 -->
-        <div id="toast" class="toast hidden"></div>
+        <div id="toast" class="toast"></div>
     </div>
 
-    <script src="/dataurltolink/miscscript.js"></script>
+    <script src="miscscript.js"></script>
 </body>
 </html>
