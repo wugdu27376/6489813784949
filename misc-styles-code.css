@@ -134,6 +134,14 @@ button:hover {
     background-color: #d04a4a;
 }
 
+.preview-btn {
+    background-color: #4caf50;
+}
+
+.preview-btn:hover {
+    background-color: #45a049;
+}
+
 .no-files {
     text-align: center;
     color: #888;

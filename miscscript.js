@@ -29,6 +29,11 @@ function parseDataURL(url) {
         }
     }
     
+    // 检查是否是有效的链接格式
+    if (!isValidLink(url)) {
+        throw new Error('无效的链接格式');
+    }
+    
     // 检查URL片段中的JSON2格式
     if (url.indexOf('#') !== -1) {
         try {
@@ -41,17 +46,17 @@ function parseDataURL(url) {
         }
     }
     
-// 检查是否是data URL（包括从文本文件导入的编码过的DataURL）
-if (url.indexOf('data:') === 0 || url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
-    // 如果是编码过的DataURL（从保存的文件中导入）
-    if (url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
-        // 提取真正的DataURL部分
-        var decodedUrl = decodeURIComponent(url.replace('data:text/plain;charset=utf-8,', ''));
-        return parseDataURI(decodedUrl);
+    // 检查是否是data URL（包括从文本文件导入的编码过的DataURL）
+    if (url.indexOf('data:') === 0 || url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
+        // 如果是编码过的DataURL（从保存的文件中导入）
+        if (url.indexOf('data:text/plain;charset=utf-8,data:') === 0) {
+            // 提取真正的DataURL部分
+            var decodedUrl = decodeURIComponent(url.replace('data:text/plain;charset=utf-8,', ''));
+            return parseDataURI(decodedUrl);
+        }
+        return parseDataURI(url);
     }
-    return parseDataURI(url);
-}
-
+    
     // 检查是否是base64数据（可能没有data:前缀）
     if (url.indexOf('base64,') !== -1) {
         // 尝试添加data:前缀
@@ -73,6 +78,61 @@ if (url.indexOf('data:') === 0 || url.indexOf('data:text/plain;charset=utf-8,dat
         data: url,
         type: 'text/plain'
     };
+}
+
+function isValidLink(url) {
+    var trimmedUrl = url.trim();
+    
+    // 空字符串不算有效链接
+    if (!trimmedUrl) {
+        return false;
+    }
+    
+    // 检查是否是已知的有效格式
+    var validFormats = [
+        // Data URL格式
+        /^data:.*/i,
+        // Blob URL格式
+        /^blob:.*/i,
+        // Base64格式（可能没有前缀）
+        /^[A-Za-z0-9+/]+={0,2}$/,
+        // JSON格式
+        /^\{.*\}$/,
+        /^\[.*\]$/,
+        // JSON(2)格式（带#号）
+        /.*#.*/,
+        // 有效的URL格式（包含常见协议）
+        /^(https?|ftp|file):\/\/.+/i
+    ];
+    
+    // 检查是否符合任一有效格式
+    for (var i = 0; i < validFormats.length; i++) {
+        if (validFormats[i].test(trimmedUrl)) {
+            // 如果是URL格式，进一步验证
+            if (validFormats[i].toString().indexOf('https?') !== -1) {
+                try {
+                    new URL(trimmedUrl);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    
+    // 检查长度（太短的可能是普通文本）
+    if (trimmedUrl.length < 10) {
+        return false;
+    }
+    
+    // 检查是否包含特殊字符（链接通常有特殊字符）
+    var hasSpecialChars = /[:/#?&=%+;,.]/.test(trimmedUrl);
+    if (!hasSpecialChars) {
+        return false;
+    }
+    
+    return true;
 }
 
 // 在miscscript.js中，parseDataURI函数后添加parseJsonData函数
@@ -338,8 +398,13 @@ function renderFilesList() {
         var fileItem = document.createElement('div');
         fileItem.className = 'file-item';
 
-        fileItem.innerHTML = '<div class="file-name" title="' + file.name + '">' + file.name +
+        var isPreviewable = isPreviewableFile(file);
+        var previewBtnHtml = isPreviewable ? 
+            '<button class="preview-btn" data-index="' + i + '">预览</button>' : '';
+            
+            fileItem.innerHTML = '<div class="file-name" title="' + file.name + '">' + file.name +
             '</div><div class="file-actions">' +
+            previewBtnHtml +
             '<button class="download-btn" data-index="' + i + '">下载</button>' +
             '<button class="delete-btn" data-index="' + i + '">删除</button>' +
             '</div>';
@@ -363,6 +428,147 @@ function renderFilesList() {
             deleteFile(index);
         });
     }
+    
+    var previewBtns = document.querySelectorAll('.preview-btn');
+    for (var l = 0; l < previewBtns.length; l++) {
+        previewBtns[l].addEventListener('click', function() {
+            var index = parseInt(this.getAttribute('data-index'));
+            previewFile(index);
+        });
+    }
+}
+
+// 在miscscript.js中，deleteFile函数后添加previewFile函数
+function previewFile(index) {
+    var file = files[index];
+    
+    // 创建自定义弹窗
+    createCustomModal(file);
+}
+
+// 添加自定义弹窗函数
+function createCustomModal(fileInfo) {
+    // 创建遮罩层
+    var overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;';
+    
+    var originalOverflow = document.body.style.overflow;
+    var originalPosition = document.body.style.position;
+    var originalWidth = document.body.style.width;
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    
+    // 禁止滚动
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = -scrollTop + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    
+    // 创建弹窗容器
+    var modal = document.createElement('div');
+    modal.className = 'preview-modal';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:2px;z-index:9999;padding:20px;min-width:300px;max-width:90vw;max-height:90vh;overflow:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    
+    // 创建内容区域
+    var content = document.createElement('div');
+    content.className = 'preview-content';
+    content.style.cssText = 'margin-bottom:40px;';
+    
+    // 创建关闭按钮
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '关闭';
+    closeBtn.style.cssText = 'position:relative;left:70%;bottom:10px;padding:8px 16px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;';
+    
+    // 根据文件类型创建不同的预览内容
+    var type = fileInfo.type || '';
+    var fileName = fileInfo.name || '未命名文件';
+    
+    // 创建标题
+    var title = document.createElement('h3');
+    title.textContent = '预览: ' + fileName;
+    title.style.cssText = 'margin-top:0;margin-bottom:15px;color:#333;';
+    
+    content.appendChild(title);
+    
+    // 图片预览
+    if (type.indexOf('image/') === 0) {
+        var img = document.createElement('img');
+        img.src = fileInfo.data;
+        img.style.cssText = 'max-width:100%;max-height:60vh;display:block;margin:0 auto;';
+        img.alt = fileName;
+        content.appendChild(img);
+    }
+    // 其他文件类型
+    else {
+        var message = document.createElement('p');
+        message.textContent = '此文件类型不支持预览';
+        message.style.cssText = 'text-align:center;color:#666;padding:20px;';
+        content.appendChild(message);
+    }
+    
+    // 组装弹窗
+    modal.appendChild(content);
+    modal.appendChild(closeBtn);
+    overlay.appendChild(modal);
+    
+    // 添加到页面
+    document.body.appendChild(overlay);
+    
+    // 关闭弹窗函数
+    function closeModal() {
+        document.body.removeChild(overlay);
+        // 恢复滚动
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+    
+        if (originalPosition !== 'fixed') {
+            window.scrollTo(0, scrollTop);
+        }
+    }
+    
+    // 绑定关闭事件
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+    
+    // ESC键关闭
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.keyCode === 27) { // ESC键
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
+}
+
+// 在miscscript.js中，renderFilesList函数前添加isPreviewableFile函数
+function isPreviewableFile(fileInfo) {
+    var type = fileInfo.type || '';
+    var name = fileInfo.name || '';
+    
+    // 图片类型
+    var imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'];
+    
+    // 检查MIME类型
+    if (imageTypes.indexOf(type) !== -1) {
+        return true;
+    }
+    
+    // 检查文件扩展名
+    var ext = name.split('.').pop().toLowerCase();
+    var imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+    
+    if (imageExts.indexOf(ext) !== -1) {
+        return true;
+    }
+    
+    return false;
 }
 
 // 下载文件

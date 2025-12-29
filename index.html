@@ -18,10 +18,8 @@
         <div class="button-row">
             <button id="parse-btn">解析</button>
             
-            <label class="file-input-label">
-                <input type="file" id="file-input" accept=".txt,.text,.json" multiple>
-                <button type="button" id="parse-file-btn">解析文件</button>
-            </label>
+            <button type="button" id="parse-file-btn">解析文件</button>
+            <input type="file" id="file-input" accept=".txt,.text,.json" multiple style="display: none;">
             
             <button id="clear-btn" class="hidden">清除</button>
         </div>
@@ -37,10 +35,8 @@
             <h3>文件转链接功能:</h3>
             
             <div class="convert-row" style="margin-bottom: 0;">
-                <label class="file-input-label">
-                    <input type="file" id="convert-file-input">
-                    <button type="button" id="select-file-btn">选择文件</button>
-                </label>
+                <button type="button" id="select-file-btn">选择文件</button>
+                <input type="file" id="convert-file-input" style="display: none;">
                 <span id="selected-file-name" class="selected-file">未选择文件</span>
             </div>
             
