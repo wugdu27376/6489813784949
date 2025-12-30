@@ -1116,14 +1116,21 @@ selectFileBtn.addEventListener('click', function() {
     if (selectFileBtn.textContent === '删除文件') {
         // 删除所有选择的文件
         selectedFiles = [];
-        fileDataUrls = {};
+        selectedFile = null;  // 添加：清空selectedFile变量
+        fileDataUrl = null;   // 添加：清空fileDataUrl变量
+        fileDataUrls = {};    // 修改：清空fileDataUrls对象
         selectedFileName.textContent = '未选择文件';
         selectFileBtn.textContent = '选择文件';
         showToast('已删除所有选择文件');
     } else {
         // 使用弹窗选择文件
         createFileDropModal(function(files) {
-            selectedFiles = Array.from(files);
+            // 修复旧版本浏览器兼容性：将FileList转换为数组
+            var filesArray = [];
+            for (var f = 0; f < files.length; f++) {
+                filesArray.push(files[f]);
+            }
+            selectedFiles = filesArray;
             
             // 添加：处理单个文件的情况
             if (selectedFiles.length === 1) {
