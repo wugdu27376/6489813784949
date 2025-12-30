@@ -209,7 +209,7 @@ input[type="file"] {
 
 .toast {
     position: fixed;
-    top: 20px;
+    top: -100px; /* 初始位置在屏幕上方 */
     left: 50%;
     -webkit-transform: translateX(-50%);
     -moz-transform: translateX(-50%);
@@ -221,17 +221,17 @@ input[type="file"] {
     padding: 12px 24px;
     border-radius: 3px;
     z-index: 1000;
-    opacity: 0;
-    -webkit-transition: opacity 0.3s;
-    -moz-transition: opacity 0.3s;
-    -o-transition: opacity 0.3s;
-    transition: opacity 0.3s;
+    opacity: 0.9;
     max-width: 80%;
     text-align: center;
+    -webkit-transition: top 0.2s ease-out, opacity 0.2s;
+    -moz-transition: top 0.2s ease-out, opacity 0.2s;
+    -o-transition: top 0.2s ease-out, opacity 0.2s;
+    transition: top 0.2s ease-out, opacity 0.2s;
 }
 
 .toast.show {
-    opacity: 0.9;
+    top: 20px; /* 显示时下移到20px位置 */
 }
 
 @media (min-width: 768px) {

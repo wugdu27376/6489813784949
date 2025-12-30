@@ -547,6 +547,152 @@ function createCustomModal(fileInfo) {
     });
 }
 
+function createFileDropModal(callback, multiple) {
+    // 创建遮罩层
+    var overlay = document.createElement('div');
+    overlay.className = 'file-drop-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;';
+    
+    // 创建弹窗容器
+    var modal = document.createElement('div');
+    modal.className = 'file-drop-modal';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:3px;z-index:9999;padding:30px;width:400px;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    
+    // 创建拖放框
+    var dropZone = document.createElement('div');
+    dropZone.className = 'file-drop-zone';
+    dropZone.style.cssText = 'border:2px dashed #ccc;border-radius:2px;padding:40px 20px;margin-bottom:20px;background:#f9f9f9;';
+    
+    // 拖放框文本
+    var dropText = document.createElement('div');
+    dropText.textContent = '将文件拖入到框内';
+    dropText.style.cssText = 'font-size:16px;color:#666;margin-bottom:20px;';
+    
+    // 创建文件输入
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'modal-file-input';
+    fileInput.style.cssText = 'display:none;';
+    if (multiple) {
+        fileInput.multiple = true;
+    }
+    
+    // 创建选择文件按钮
+    var selectBtn = document.createElement('button');
+    selectBtn.textContent = '选择文件';
+    selectBtn.style.cssText = 'padding:10px 30px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;font-size:16px;';
+    
+    // 创建关闭按钮
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '关闭';
+    closeBtn.style.cssText = 'position:relative;left:38%;padding:8px 20px;background:#e05a5a;color:white;border:none;border-radius:2px;cursor:pointer;';
+    
+    // 组装弹窗
+    dropZone.appendChild(dropText);
+    dropZone.appendChild(fileInput);
+    dropZone.appendChild(selectBtn);
+    modal.appendChild(dropZone);
+    modal.appendChild(closeBtn);
+    overlay.appendChild(modal);
+    
+    // 添加到页面
+    document.body.appendChild(overlay);
+    
+    // 禁止滚动
+    var originalOverflow = document.body.style.overflow;
+    var originalPosition = document.body.style.position;
+    var originalWidth = document.body.style.width;
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.top = -scrollTop + 'px';
+    
+    // 拖放功能
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.borderColor = '#4a6ee0';
+        dropZone.style.background = '#f0f5ff';
+    }
+    
+    function handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.background = '#f9f9f9';
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.background = '#f9f9f9';
+        
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            callback(files);
+            closeModal();
+        }
+    }
+    
+    // 绑定拖放事件
+    dropZone.addEventListener('dragover', handleDragOver);
+    dropZone.addEventListener('dragleave', handleDragLeave);
+    dropZone.addEventListener('drop', handleDrop);
+    
+    // 绑定按钮事件
+    selectBtn.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            callback(this.files);
+            closeModal();
+        }
+    });
+    
+    // 关闭弹窗函数
+    function closeModal() {
+        // 恢复滚动
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.top = '';
+        
+        if (originalPosition !== 'fixed') {
+            window.scrollTo(0, scrollTop);
+        }
+        
+        // 移除事件监听
+        dropZone.removeEventListener('dragover', handleDragOver);
+        dropZone.removeEventListener('dragleave', handleDragLeave);
+        dropZone.removeEventListener('drop', handleDrop);
+        
+        // 移除弹窗
+        document.body.removeChild(overlay);
+    }
+    
+    // 绑定关闭事件
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+    
+    // ESC键关闭
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.keyCode === 27) {
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
+}
+
 // 在miscscript.js中，renderFilesList函数前添加isPreviewableFile函数
 function isPreviewableFile(fileInfo) {
     var type = fileInfo.type || '';
@@ -639,14 +785,21 @@ function parseTextFile(file) {
 
         // 过滤空行
         for (var i = 0; i < lines.length; i++) {
-            if (lines[i].trim() !== '') {
-                validLines.push(lines[i].trim());
+            var line = lines[i].trim();
+            if (line !== '') {
+                validLines.push(line);
             }
         }
 
         if (validLines.length === 0) {
+            showToast('文件中没有有效内容');
             return;
         }
+
+        var successCount = 0;
+        var errorCount = 0;
+        var pendingPromises = 0;
+        var totalLines = validLines.length;
 
         // 解析每一行
         for (var j = 0; j < validLines.length; j++) {
@@ -656,17 +809,38 @@ function parseTextFile(file) {
 
                 // 如果是Promise，需要等待
                 if (fileInfo && fileInfo.then) {
+                    pendingPromises++;
                     fileInfo.then(function(info) {
                         addFileToList(info);
-                        showToast('文件解析成功: ' + info.name);
+                        successCount++;
+                        pendingPromises--;
+                        checkCompletion();
                     }).catch(function(err) {
-                        showToast('解析链接失败: ' + err.message);
+                        errorCount++;
+                        pendingPromises--;
+                        checkCompletion();
                     });
                 } else {
                     addFileToList(fileInfo);
+                    successCount++;
+                    checkCompletion();
                 }
             } catch (err) {
-                showToast('解析链接失败: ' + err.message);
+                errorCount++;
+                checkCompletion();
+            }
+        }
+
+        function checkCompletion() {
+            // 所有行都处理完成时显示统计结果
+            if (successCount + errorCount === totalLines && pendingPromises === 0) {
+                if (errorCount === 0) {
+                    showToast('成功解析 ' + successCount + ' 个链接');
+                } else if (successCount === 0) {
+                    showToast('解析失败 ' + errorCount + ' 个链接');
+                } else {
+                    showToast('成功解析 ' + successCount + ' 个链接，错误 ' + errorCount + ' 个');
+                }
             }
         }
     };
@@ -754,7 +928,40 @@ function showSummaryToast(successCount, errorCount) {
 }
 
 parseFileBtn.addEventListener('click', function() {
-    fileInput.click();
+    createFileDropModal(function(files) {
+        // 只允许.txt和.json文件
+        var validFiles = [];
+        var invalidFiles = [];
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var fileName = file.name.toLowerCase();
+            var isTxtFile = fileName.endsWith('.txt');
+            var isJsonFile = fileName.endsWith('.json');
+            
+            if (isTxtFile || isJsonFile) {
+                validFiles.push(file);
+            } else {
+                invalidFiles.push(file.name);
+            }
+        }
+
+        if (validFiles.length === 0) {
+            if (invalidFiles.length > 0) {
+                showToast('请选择.txt或.json文件');
+            }
+            return;
+        }
+
+        if (invalidFiles.length > 0) {
+            showToast('已跳过' + invalidFiles.length + '个非.txt/.json文件');
+        }
+
+        // 解析所有有效文件
+        for (var j = 0; j < validFiles.length; j++) {
+            parseTextFile(validFiles[j]);
+        }
+    }, true);
 });
 
 fileInput.addEventListener('change', function() {
@@ -762,37 +969,132 @@ fileInput.addEventListener('change', function() {
         return;
     }
 
-    var file = this.files[0];
+    var validFiles = [];
+    var invalidFiles = [];
 
-    // 检查是否是文本文件或JSON文件
-    var isTextFile = file.type.indexOf('text/') === 0;
-    var isTxtFile = file.name.lastIndexOf('.txt') === file.name.length - 4;
-    var isJsonFile = file.name.lastIndexOf('.json') === file.name.length - 5;
-    if (!isTextFile && !isTxtFile && !isJsonFile) {
-        showToast('请选择文本文件或JSON文件');
+    // 检查所有选择的文件，只允许.txt和.json文件
+    for (var i = 0; i < this.files.length; i++) {
+        var file = this.files[i];
+        var fileName = file.name.toLowerCase();
+        var isTxtFile = fileName.endsWith('.txt');
+        var isJsonFile = fileName.endsWith('.json');
+        
+        if (isTxtFile || isJsonFile) {
+            validFiles.push(file);
+        } else {
+            invalidFiles.push(file.name);
+        }
+    }
+
+    if (validFiles.length === 0) {
+        if (invalidFiles.length > 0) {
+            showToast('请选择.txt或.json文件');
+        }
         this.value = '';
         return;
     }
+
+    if (invalidFiles.length > 0) {
+        showToast('已跳过' + invalidFiles.length + '个非.txt/.json文件');
+    }
+
+    // 解析所有有效文件
+    for (var j = 0; j < validFiles.length; j++) {
+        parseTextFile(validFiles[j]);
+    }
     
-    parseTextFile(file);
     this.value = '';
 });
 
-// Toast提示功能
-var toast = document.getElementById('toast');
+var currentToast = null;
 var toastTimer = null;
+var pendingToastTimer = null;
 
 function showToast(message) {
+    // 取消之前所有待处理的toast
+    if (pendingToastTimer) {
+        clearTimeout(pendingToastTimer);
+        pendingToastTimer = null;
+    }
+    
+    // 如果已有toast正在显示，立即收起它
+    if (currentToast) {
+        var oldToast = currentToast;
+        currentToast = null;
+        
+        // 立即移除旧toast，不等待动画
+        if (oldToast.parentNode) {
+            oldToast.style.transition = 'none';
+            oldToast.style.top = '-100px';
+            oldToast.style.opacity = '0';
+            
+            // 直接移除，不等待动画
+            setTimeout(function() {
+                if (oldToast.parentNode) {
+                    document.body.removeChild(oldToast);
+                }
+            }, 0);
+        }
+        
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+            toastTimer = null;
+        }
+    }
+    
+    // 延迟创建新toast，防止连续快速创建
+    pendingToastTimer = setTimeout(function() {
+        createNewToast(message);
+        pendingToastTimer = null;
+    }, 10);
+}
+
+function createNewToast(message) {
+    // 创建一个新的toast元素
+    currentToast = document.createElement('div');
+    currentToast.className = 'toast';
+    currentToast.textContent = message;
+    currentToast.style.cssText = 'position:fixed;left:50%;top:-100px;transform:translateX(-50%);background-color:#333;color:white;padding:12px 24px;border-radius:3px;z-index:1000;opacity:0.9;max-width:80%;text-align:center;transition:top 0.15s ease-out, opacity 0.15s;';
+    
+    // 添加到页面
+    document.body.appendChild(currentToast);
+    
+    // 强制重绘，确保transition生效
+    currentToast.offsetHeight;
+    
+    // 显示toast（下移到20px位置）
+    currentToast.style.top = '20px';
+    
+    // 设置自动收起
+    toastTimer = setTimeout(function() {
+        if (currentToast) {
+            var toastToRemove = currentToast;
+            toastToRemove.style.top = '-100px';
+            toastToRemove.style.opacity = '0';
+            
+            // 动画结束后移除元素
+            setTimeout(function() {
+                if (toastToRemove && toastToRemove.parentNode) {
+                    document.body.removeChild(toastToRemove);
+                    if (currentToast === toastToRemove) {
+                        currentToast = null;
+                    }
+                }
+            }, 150);
+        }
+        toastTimer = null;
+    }, 2000);
+}
+
+// 添加新的内部函数用于显示toast
+function showNewToast(message) {
     toast.textContent = message;
     toast.classList.remove('hidden');
     toast.className = 'toast show';
 
-    if (toastTimer) {
-        clearTimeout(toastTimer);
-    }
-
     toastTimer = setTimeout(function() {
         toast.className = 'toast';
+        toastTimer = null; // 重置计时器
     }, 2000);
 }
 
@@ -807,46 +1109,102 @@ var saveAsFileCheckbox = document.getElementById('save-as-file');
 
 var selectedFile = null;
 var fileDataUrl = null;
+var selectedFiles = null;
 
 // 选择/删除文件
 selectFileBtn.addEventListener('click', function() {
     if (selectFileBtn.textContent === '删除文件') {
-        // 删除当前选择的文件
-        selectedFile = null;
-        fileDataUrl = null;
+        // 删除所有选择的文件
+        selectedFiles = [];
+        fileDataUrls = {};
         selectedFileName.textContent = '未选择文件';
         selectFileBtn.textContent = '选择文件';
-        convertFileInput.value = '';
-        showToast('已删除选择文件');
+        showToast('已删除所有选择文件');
     } else {
-        // 选择新文件
-        convertFileInput.click();
+        // 使用弹窗选择文件
+        createFileDropModal(function(files) {
+            selectedFiles = Array.from(files);
+            
+            // 添加：处理单个文件的情况
+            if (selectedFiles.length === 1) {
+                selectedFile = selectedFiles[0];  // 设置selectedFile变量
+                // 读取文件为DataURL
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    fileDataUrl = e.target.result;  // 设置fileDataUrl变量
+                };
+                reader.readAsDataURL(selectedFile);
+            } else {
+                selectedFile = null;  // 多个文件时清空selectedFile
+                fileDataUrl = null;   // 多个文件时清空fileDataUrl
+            }
+            
+            if (selectedFiles.length === 1) {
+                selectedFileName.textContent = selectedFiles[0].name;
+            } else {
+                selectedFileName.textContent = '已选择 ' + selectedFiles.length + ' 个文件';
+            }
+            
+            selectFileBtn.textContent = '删除文件';
+            
+            // 清空之前的URL缓存
+            fileDataUrls = {};
+            
+            // 为每个文件读取DataURL
+            for (var i = 0; i < selectedFiles.length; i++) {
+                (function(index) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        fileDataUrls[index] = e.target.result;
+                    };
+                    reader.readAsDataURL(selectedFiles[index]);
+                })(i);
+            }
+        }, true);
     }
 });
 
 convertFileInput.addEventListener('change', function() {
     if (this.files.length === 0) {
         selectedFile = null;
+        selectedFiles = null;
         selectedFileName.textContent = '未选择文件';
         selectFileBtn.textContent = '选择文件';
         return;
     }
 
-    selectedFile = this.files[0];
-    selectedFileName.textContent = selectedFile.name;
-    selectFileBtn.textContent = '删除文件';
+    if (this.files.length === 1) {
+        // 单个文件模式
+        selectedFile = this.files[0];
+        selectedFiles = null;
+        selectedFileName.textContent = selectedFile.name;
+        selectFileBtn.textContent = '删除文件';
 
-    // 读取文件为DataURL
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        fileDataUrl = e.target.result;
-    };
-    reader.readAsDataURL(selectedFile);
+        // 读取文件为DataURL
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            fileDataUrl = e.target.result;
+        };
+        reader.readAsDataURL(selectedFile);
+    } else {
+        // 多个文件模式
+        selectedFile = null;
+        selectedFiles = Array.from(this.files);
+        selectedFileName.textContent = '已选择 ' + this.files.length + ' 个文件';
+        selectFileBtn.textContent = '删除文件';
+        fileDataUrl = null;
+    }
     this.value = '';
 });
 
 // 转换功能
 function convertToDataURL() {
+    // 检查是否是多个文件
+    if (selectedFiles && selectedFiles.length > 1) {
+        convertMultipleFilesToDataURL();
+        return;
+    }
+    
     if (!selectedFile || !fileDataUrl) {
         showToast('请先选择文件');
         return;
@@ -893,6 +1251,12 @@ function convertToDataURL() {
 }
 
 function convertToBlob() {
+    // 检查是否是多个文件
+    if (selectedFiles && selectedFiles.length > 1) {
+        convertMultipleFilesToBlob();
+        return;
+    }
+    
     if (!selectedFile) {
         showToast('请先选择文件');
         return;
@@ -941,6 +1305,12 @@ function convertToBlob() {
 }
 
 function convertToBase64() {
+    // 检查是否是多个文件
+    if (selectedFiles && selectedFiles.length > 1) {
+        convertMultipleFilesToBase64();
+        return;
+    }
+    
     if (!selectedFile || !fileDataUrl) {
         showToast('请先选择文件');
         return;
@@ -994,6 +1364,12 @@ function convertToBase64() {
 }
 
 function convertToJson() {
+    // 检查是否是多个文件
+    if (selectedFiles && selectedFiles.length > 1) {
+        convertMultipleFilesToJson();
+        return;
+    }
+    
     if (!selectedFile) {
         showToast('请先选择文件');
         return;
@@ -1078,6 +1454,12 @@ function convertToJson() {
 
 // 在miscscript.js中，convertToJson函数后添加convertToJson2函数
 function convertToJson2() {
+    // 检查是否是多个文件
+    if (selectedFiles && selectedFiles.length > 1) {
+        convertMultipleFilesToJson2();
+        return;
+    }
+    
     if (!selectedFile) {
         showToast('请先选择文件');
         return;
@@ -1142,6 +1524,301 @@ function convertToJson2() {
     };
     
     reader.readAsDataURL(selectedFile);
+}
+
+function formatTimestampForFilename() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+    var hours = now.getHours();
+    var minutes = now.getMinutes();
+    var seconds = now.getSeconds();
+    
+    // 格式化数字，确保两位数，第一位是0时显示0
+    var monthStr = month < 10 ? '0' + month : month.toString();
+    var dayStr = day < 10 ? '0' + day : day.toString();
+    var hoursStr = hours < 10 ? '0' + hours : hours.toString();
+    var minutesStr = minutes < 10 ? '0' + minutes : minutes.toString();
+    var secondsStr = seconds < 10 ? '0' + seconds : seconds.toString();
+    
+    return year + monthStr + dayStr + '_' + hoursStr + minutesStr + secondsStr;
+}
+
+// 多文件转换为DataURL链接文件
+function convertMultipleFilesToDataURL() {
+    var promises = [];
+    
+    // 为每个文件创建读取Promise
+    for (var i = 0; i < selectedFiles.length; i++) {
+        var file = selectedFiles[i];
+        var promise = new Promise(function(resolve) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                resolve(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+        promises.push(promise);
+    }
+    
+    // 等待所有文件读取完成
+    Promise.all(promises).then(function(dataUrls) {
+        saveAsFileCheckbox.checked = true;
+        localStorage.setItem('save-as-file-checked', 'true');
+        
+        // 创建文本内容，每行一个DataURL
+        var content = '';
+        for (var j = 0; j < dataUrls.length; j++) {
+            content += dataUrls[j] + '\n';
+        }
+        
+        // 创建下载链接
+        var blob = new Blob([content], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", url);
+        var timestamp = formatTimestampForFilename();
+        downloadAnchorNode.setAttribute("download", "dataurls_" + timestamp + ".txt");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        document.body.removeChild(downloadAnchorNode);
+        
+        // 释放URL对象
+        setTimeout(function() {
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('已生成 ' + selectedFiles.length + ' 个DataURL链接文件');
+    });
+}
+
+// 多文件转换为Blob链接文件
+function convertMultipleFilesToBlob() {
+    saveAsFileCheckbox.checked = true;
+    localStorage.setItem('save-as-file-checked', 'true');
+    
+    // 创建文本内容，每行一个Blob URL
+    var content = '';
+    var urls = [];
+    
+    for (var i = 0; i < selectedFiles.length; i++) {
+        var blobUrl = URL.createObjectURL(selectedFiles[i]);
+        urls.push(blobUrl);
+        content += blobUrl + '\n';
+    }
+    
+    // 创建下载链接
+    var blob = new Blob([content], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    var timestamp = formatTimestampForFilename();
+    downloadAnchorNode.setAttribute("download", "bloburls_" + timestamp + ".txt");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    document.body.removeChild(downloadAnchorNode);
+    
+    // 清理Blob URLs
+    setTimeout(function() {
+        URL.revokeObjectURL(url);
+        for (var j = 0; j < urls.length; j++) {
+            URL.revokeObjectURL(urls[j]);
+        }
+    }, 100);
+    
+    showToast('已生成 ' + selectedFiles.length + ' 个Blob链接文件');
+}
+
+// 多文件转换为Base64链接文件
+function convertMultipleFilesToBase64() {
+    var promises = [];
+    
+    // 为每个文件创建读取Promise
+    for (var i = 0; i < selectedFiles.length; i++) {
+        var file = selectedFiles[i];
+        var promise = new Promise(function(resolve) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var dataUrl = e.target.result;
+                var base64Data = dataUrl.split(',')[1] || dataUrl;
+                resolve(base64Data);
+            };
+            reader.readAsDataURL(file);
+        });
+        promises.push(promise);
+    }
+    
+    // 等待所有文件读取完成
+    Promise.all(promises).then(function(base64DataArray) {
+        saveAsFileCheckbox.checked = true;
+        localStorage.setItem('save-as-file-checked', 'true');
+        
+        // 创建文本内容，每行一个Base64数据
+        var content = '';
+        for (var j = 0; j < base64DataArray.length; j++) {
+            content += base64DataArray[j] + '\n';
+        }
+        
+        // 创建下载链接
+        var blob = new Blob([content], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", url);
+        var timestamp = formatTimestampForFilename();
+        downloadAnchorNode.setAttribute("download", "base64data_" + timestamp + ".txt");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        document.body.removeChild(downloadAnchorNode);
+        
+        // 释放URL对象
+        setTimeout(function() {
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('已生成 ' + selectedFiles.length + ' 个Base64数据文件');
+    });
+}
+
+// 多文件转换为JSON链接文件
+function convertMultipleFilesToJson() {
+    var promises = [];
+    
+    // 为每个文件创建读取Promise
+    for (var i = 0; i < selectedFiles.length; i++) {
+        var file = selectedFiles[i];
+        (function(file) {
+            var promise = new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var content = e.target.result;
+                    var jsonObject = {
+                        filename: file.name,
+                        size: file.size,
+                        type: file.type,
+                        lastModified: file.lastModified,
+                        data: null
+                    };
+
+                    // 根据文件类型处理数据
+                    if (file.type.indexOf('text/') === 0 || 
+                        file.type === 'application/json' ||
+                        file.name.endsWith('.txt') ||
+                        file.name.endsWith('.json')) {
+                        // 文本文件直接包含内容
+                        jsonObject.data = content;
+                    } else {
+                        // 二进制文件转换为base64
+                        var dataUrlReader = new FileReader();
+                        dataUrlReader.onload = function(dataEvent) {
+                            jsonObject.data = dataEvent.target.result.split(',')[1] || dataEvent.target.result;
+                            resolve(JSON.stringify(jsonObject));
+                        };
+                        dataUrlReader.readAsDataURL(file);
+                        return;
+                    }
+
+                    resolve(JSON.stringify(jsonObject));
+                };
+                reader.readAsText(file);
+            });
+            promises.push(promise);
+        })(file);
+    }
+    
+    // 等待所有文件读取完成
+    Promise.all(promises).then(function(jsonStrings) {
+        saveAsFileCheckbox.checked = true;
+        localStorage.setItem('save-as-file-checked', 'true');
+        
+        // 创建文本内容，每行一个JSON字符串
+        var content = '';
+        for (var j = 0; j < jsonStrings.length; j++) {
+            content += jsonStrings[j] + '\n';
+        }
+        
+        // 创建下载链接
+        var blob = new Blob([content], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", url);
+        var timestamp = formatTimestampForFilename();
+        downloadAnchorNode.setAttribute("download", "jsondata" + timestamp + ".txt");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        document.body.removeChild(downloadAnchorNode);
+        
+        // 释放URL对象
+        setTimeout(function() {
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('已生成 ' + selectedFiles.length + ' 个JSON数据文件');
+    });
+}
+
+// 多文件转换为JSON2链接文件
+// 多文件转换为JSON2链接文件
+function convertMultipleFilesToJson2() {
+    var promises = [];
+    
+    // 为每个文件创建读取Promise
+    for (var i = 0; i < selectedFiles.length; i++) {
+        var file = selectedFiles[i];
+        (function(file) {
+            var promise = new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var fileData = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        lastModified: file.lastModified,
+                        data: e.target.result.split(',')[1]
+                    };
+                    resolve(fileData);
+                };
+                reader.readAsDataURL(file);
+            });
+            promises.push(promise);
+        })(file);
+    }
+    
+    // 等待所有文件读取完成
+    Promise.all(promises).then(function(fileDataArray) {
+        saveAsFileCheckbox.checked = true;
+        localStorage.setItem('save-as-file-checked', 'true');
+        
+        // 创建文本内容，每个JSON2链接单独一行
+        var content = '';
+        for (var j = 0; j < fileDataArray.length; j++) {
+            var data = {
+                files: [fileDataArray[j]]
+            };
+            var dataStr = JSON.stringify(data);
+            var currentUrl = window.location.href.split('#')[0];
+            var jsonUrl = currentUrl + '#' + encodeURIComponent(dataStr);
+            content += jsonUrl + '\n';
+        }
+        
+        // 创建下载链接（将JSON2链接保存为文本文件）
+        var blob = new Blob([content], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", url);
+        var timestamp = formatTimestampForFilename();
+        downloadAnchorNode.setAttribute("download", "json2links_" + timestamp + ".txt");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        document.body.removeChild(downloadAnchorNode);
+        
+        // 释放URL对象
+        setTimeout(function() {
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('已生成 ' + selectedFiles.length + ' 个JSON2链接文件');
+    });
 }
 
 // 加载保存的勾选状态
