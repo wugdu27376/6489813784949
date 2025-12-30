@@ -1233,25 +1233,20 @@ function convertToDataURL() {
         var result = prompt('DataURL链接:', fileDataUrl);
         if (result !== null) {
             // 用户没有点击取消
-            try {
-                navigator.clipboard.writeText(fileDataUrl).then(function() {
-                    showToast('DataURL已复制到剪贴板');
-                }).catch(function(err) {
-                    // 如果clipboard API失败，使用传统方法
-                    if (document.execCommand) {
-                        var textarea = document.createElement('textarea');
-                        textarea.value = fileDataUrl;
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                        showToast('DataURL已复制到剪贴板');
-                    } else {
-                        showToast('DataURL已生成');
-                    }
-                });
-            } catch (err) {
-                showToast('DataURL已生成');
+            // 使用传统复制方法
+            var textarea = document.createElement('textarea');
+            textarea.value = result === fileDataUrl ? fileDataUrl : result;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            var success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (success) {
+                showToast('DataURL已复制到剪贴板');
+            } else {
+                showToast('DataURL复制失败');
             }
         }
     }
@@ -1287,25 +1282,20 @@ function convertToBlob() {
         var result = prompt('Blob URL链接:', blobUrl);
         if (result !== null) {
             // 用户没有点击取消
-            try {
-                navigator.clipboard.writeText(blobUrl).then(function() {
-                    showToast('Blob URL已复制到剪贴板');
-                }).catch(function(err) {
-                    // 如果clipboard API失败，使用传统方法
-                    if (document.execCommand) {
-                        var textarea = document.createElement('textarea');
-                        textarea.value = blobUrl;
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                        showToast('Blob URL已复制到剪贴板');
-                    } else {
-                        showToast('Blob URL已生成');
-                    }
-                });
-            } catch (err) {
-                showToast('Blob URL已生成');
+            // 使用传统复制方法
+            var textarea = document.createElement('textarea');
+            textarea.value = result === blobUrl ? blobUrl : result;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            var success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (success) {
+                showToast('Blob URL已复制到剪贴板');
+            } else {
+                showToast('Blob URL复制失败');
             }
         }
     }
@@ -1346,25 +1336,20 @@ function convertToBase64() {
         var result = prompt('Base64数据:', base64Data);
         if (result !== null) {
             // 用户没有点击取消
-            try {
-                navigator.clipboard.writeText(base64Data).then(function() {
-                    showToast('Base64已复制到剪贴板');
-                }).catch(function(err) {
-                    // 如果clipboard API失败，使用传统方法
-                    if (document.execCommand) {
-                        var textarea = document.createElement('textarea');
-                        textarea.value = base64Data;
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                        showToast('Base64已复制到剪贴板');
-                    } else {
-                        showToast('Base64已生成');
-                    }
-                });
-            } catch (err) {
-                showToast('Base64已生成');
+            // 使用传统复制方法
+            var textarea = document.createElement('textarea');
+            textarea.value = result === base64Data ? base64Data : result;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            var success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (success) {
+                showToast('Base64已复制到剪贴板');
+            } else {
+                showToast('Base64复制失败');
             }
         }
     }
@@ -1432,25 +1417,20 @@ function convertToJson() {
             var result = prompt('JSON数据:', jsonString);
             if (result !== null) {
                 // 用户没有点击取消
-                try {
-                    navigator.clipboard.writeText(jsonString).then(function() {
-                        showToast('JSON已复制到剪贴板');
-                    }).catch(function(err) {
-                        // 如果clipboard API失败，使用传统方法
-                        if (document.execCommand) {
-                            var textarea = document.createElement('textarea');
-                            textarea.value = jsonString;
-                            document.body.appendChild(textarea);
-                            textarea.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(textarea);
-                            showToast('JSON已复制到剪贴板');
-                        } else {
-                            showToast('JSON已生成');
-                        }
-                    });
-                } catch (err) {
-                    showToast('JSON已生成');
+                // 使用传统复制方法
+                var textarea = document.createElement('textarea');
+                textarea.value = result === jsonString ? jsonString : result;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                var success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (success) {
+                    showToast('JSON已复制到剪贴板');
+                } else {
+                    showToast('JSON复制失败');
                 }
             }
         }
@@ -1505,26 +1485,20 @@ function convertToJson2() {
             var result = prompt('JSON2链接:', jsonUrl);
             if (result !== null) {
                 // 用户没有点击取消
-                var textToCopy = result === jsonUrl ? jsonUrl : result;
-                try {
-                    navigator.clipboard.writeText(textToCopy).then(function() {
-                        showToast('JSON2已复制到剪贴板');
-                    }).catch(function(err) {
-                        // 如果clipboard API失败，使用传统方法
-                        if (document.execCommand) {
-                            var textarea = document.createElement('textarea');
-                            textarea.value = textToCopy;
-                            document.body.appendChild(textarea);
-                            textarea.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(textarea);
-                            showToast('JSON2已复制到剪贴板');
-                        } else {
-                            showToast('JSON2已生成');
-                        }
-                    });
-                } catch (err) {
-                    showToast('JSON2已生成');
+                // 使用传统复制方法
+                var textarea = document.createElement('textarea');
+                textarea.value = result === jsonUrl ? jsonUrl : result;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                var success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (success) {
+                    showToast('JSON2已复制到剪贴板');
+                } else {
+                    showToast('JSON2复制失败');
                 }
             }
         }
