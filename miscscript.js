@@ -468,7 +468,7 @@ function createCustomModal(fileInfo) {
     // 创建弹窗容器
     var modal = document.createElement('div');
     modal.className = 'preview-modal';
-    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:2px;z-index:9999;padding:20px;min-width:300px;max-width:90vw;max-height:90vh;overflow:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;-webkit-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);transform:translate(-50%,-50%);background:#fff;border-radius:2px;z-index:9999;padding:20px;min-width:300px;max-width:90vw;max-height:90vh;overflow:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
     
     // 创建内容区域
     var content = document.createElement('div');
@@ -479,6 +479,21 @@ function createCustomModal(fileInfo) {
     var closeBtn = document.createElement('button');
     closeBtn.textContent = '关闭';
     closeBtn.style.cssText = 'position:relative;left:70%;bottom:10px;padding:8px 16px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;';
+    
+    closeBtn.onmouseover = function() {
+        this.style.backgroundColor = '#3a5ed0';
+    };
+    closeBtn.onmouseout = function() {
+        this.style.backgroundColor = '#4a6ee0';
+    };
+    closeBtn.addEventListener('touchstart', function() {
+        this.style.backgroundColor = '#3a5ed0';
+        this.style.transform = 'translateY(0)';
+    });
+    closeBtn.addEventListener('touchend', function() {
+        this.style.backgroundColor = '#4a6ee0';
+        this.style.transform = 'translateY(0)';
+    });
     
     // 根据文件类型创建不同的预览内容
     var type = fileInfo.type || '';
@@ -556,7 +571,7 @@ function createFileDropModal(callback, multiple) {
     // 创建弹窗容器
     var modal = document.createElement('div');
     modal.className = 'file-drop-modal';
-    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:3px;z-index:9999;padding:30px;width:400px;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;-webkit-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);transform:translate(-50%,-50%);background:#fff;border-radius:3px;z-index:9999;padding:30px;width:400px;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
     
     // 创建拖放框
     var dropZone = document.createElement('div');
@@ -582,10 +597,40 @@ function createFileDropModal(callback, multiple) {
     selectBtn.textContent = '选择文件';
     selectBtn.style.cssText = 'padding:10px 30px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;font-size:16px;';
     
+    selectBtn.onmouseover = function() {
+        this.style.backgroundColor = '#3a5ed0';
+    };
+    selectBtn.onmouseout = function() {
+        this.style.backgroundColor = '#4a6ee0';
+    };
+    selectBtn.addEventListener('touchstart', function() {
+        this.style.backgroundColor = '#3a5ed0';
+        this.style.transform = 'translateY(0)';
+    });
+    selectBtn.addEventListener('touchend', function() {
+        this.style.backgroundColor = '#4a6ee0';
+        this.style.transform = 'translateY(0)';
+    });
+    
     // 创建关闭按钮
     var closeBtn = document.createElement('button');
     closeBtn.textContent = '关闭';
     closeBtn.style.cssText = 'position:relative;left:38%;padding:8px 20px;background:#e05a5a;color:white;border:none;border-radius:2px;cursor:pointer;';
+    
+    closeBtn.onmouseover = function() {
+        this.style.backgroundColor = '#d04a4a';
+    };
+    closeBtn.onmouseout = function() {
+        this.style.backgroundColor = '#e05a5a';
+    };
+    closeBtn.addEventListener('touchstart', function() {
+        this.style.backgroundColor = '#d04a4a';
+        this.style.transform = 'translateY(0)';
+    });
+    closeBtn.addEventListener('touchend', function() {
+        this.style.backgroundColor = '#e05a5a';
+        this.style.transform = 'translateY(0)';
+    });
     
     // 组装弹窗
     dropZone.appendChild(dropText);
@@ -1054,7 +1099,7 @@ function createNewToast(message) {
     currentToast = document.createElement('div');
     currentToast.className = 'toast';
     currentToast.textContent = message;
-    currentToast.style.cssText = 'position:fixed;left:50%;top:-100px;transform:translateX(-50%);background-color:#333;color:white;padding:12px 24px;border-radius:3px;z-index:1000;opacity:0.9;max-width:80%;text-align:center;transition:top 0.15s ease-out, opacity 0.15s;';
+    currentToast.style.cssText = 'position:fixed;left:50%;top:-100px;-webkit-transform:translateX(-50%);-moz-transform:translateX(-50%);-ms-transform:translateX(-50%);-o-transform:translateX(-50%);transform:translateX(-50%);background-color:#333;color:white;padding:12px 24px;border-radius:3px;z-index:1000;opacity:0.9;max-width:80%;text-align:center;transition:top 0.15s ease-out, opacity 0.15s;';
     
     // 添加到页面
     document.body.appendChild(currentToast);
