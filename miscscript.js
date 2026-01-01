@@ -1158,16 +1158,7 @@ var selectedFiles = null;
 
 // 选择/删除文件
 selectFileBtn.addEventListener('click', function() {
-    if (selectFileBtn.textContent === '删除文件') {
-        // 删除所有选择的文件
-        selectedFiles = [];
-        selectedFile = null;  // 添加：清空selectedFile变量
-        fileDataUrl = null;   // 添加：清空fileDataUrl变量
-        fileDataUrls = {};    // 修改：清空fileDataUrls对象
-        selectedFileName.textContent = '未选择文件';
-        selectFileBtn.textContent = '选择文件';
-        showToast('已删除所有选择文件');
-    } else {
+    if (selectFileBtn.id === 'select-file-btn') {
         // 使用弹窗选择文件
         createFileDropModal(function(files) {
             // 修复旧版本浏览器兼容性：将FileList转换为数组
@@ -1198,6 +1189,7 @@ selectFileBtn.addEventListener('click', function() {
             }
             
             selectFileBtn.textContent = '删除文件';
+            selectFileBtn.id = 'delete-file-btn';
             
             // 清空之前的URL缓存
             fileDataUrls = {};
@@ -1213,6 +1205,16 @@ selectFileBtn.addEventListener('click', function() {
                 })(i);
             }
         }, true);
+    } else {
+        // 删除所有选择的文件
+        selectedFiles = [];
+        selectedFile = null;  // 添加：清空selectedFile变量
+        fileDataUrl = null;   // 添加：清空fileDataUrl变量
+        fileDataUrls = {};    // 修改：清空fileDataUrls对象
+        selectedFileName.textContent = '未选择文件';
+        selectFileBtn.textContent = '选择文件';
+        selectFileBtn.id = 'select-file-btn';
+        showToast('已删除所有选择文件');
     }
 });
 
