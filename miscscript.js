@@ -621,8 +621,7 @@ function createCustomModal(fileInfo) {
     });
 }
 
-// 在 miscscript.js 中的 createFileDropModal 函数完整修改
-function createFileDropModal(callback, multiple, isSelectFileBtn) {
+function createFileDropModal(callback, multiple) {
     // 创建遮罩层
     var overlay = document.createElement('div');
     overlay.className = 'file-drop-overlay';
@@ -696,104 +695,6 @@ function createFileDropModal(callback, multiple, isSelectFileBtn) {
     dropZone.appendChild(dropText);
     dropZone.appendChild(fileInput);
     dropZone.appendChild(selectBtn);
-    
-    if (isSelectFileBtn) {
-        var urlLink = document.createElement('div');
-        urlLink.textContent = '从URL中获取';
-        urlLink.style.cssText = 'margin-top:10px;color:#4a6ee0;cursor:pointer;font-size:14px;text-decoration:none;display:block;';
-        
-        // 悬停时显示下划线
-        urlLink.onmouseover = function() {
-            this.style.textDecoration = 'underline';
-        };
-        urlLink.onmouseout = function() {
-            this.style.textDecoration = 'none';
-        };
-        
-        // 点击事件
-        urlLink.addEventListener('click', function() {
-            // 检查是否正在下载中
-            if (this.style.cursor === 'wait') {
-                return; // 如果正在下载中，直接返回不执行任何操作
-            }
-            
-            var url = prompt('请输入要下载的文件链接:', '');
-            if (url && url.trim()) {
-                url = url.trim();
-                
-                // 检查URL是否有协议前缀，如果没有自动添加https://
-                if (url.indexOf('://') === -1) {
-                    url = 'https://' + url;
-                }
-            
-                // 显示下载中提示
-                var originalText = urlLink.textContent;
-                urlLink.textContent = '下载中...';
-                urlLink.style.color = '#666';
-                urlLink.style.cursor = 'wait';
-                
-                // 使用fetch下载文件
-                fetch(url)
-                    .then(function(response) {
-                        if (!response.ok) {
-                            throw new Error('下载失败: ' + response.status + ' ' + response.statusText);
-                        }
-                        return response.blob();
-                    })
-                    .then(function(blob) {
-                        // 从URL中提取文件名
-                        var fileName = url.split('/').pop();
-                        if (!fileName || fileName.indexOf('?') !== -1) {
-                            fileName = 'downloaded_file';
-                        }
-                            
-                        // 创建File对象
-                        var file = new File([blob], fileName, {
-                            type: blob.type || 'application/octet-stream',
-                            lastModified: Date.now()
-                        });
-                        
-                        // 关闭弹窗
-                        closeModal();
-                        
-                        // 模拟文件选择
-                        if (callback) {
-                            // 创建FileList的模拟
-                            var filesArray = [file];
-                            
-                            // 修复：创建包含File对象的FileList模拟对象
-                            var fileList = {
-                                0: file,
-                                length: 1,
-                                item: function(index) {
-                                    return index === 0 ? file : null;
-                                }
-                            };
-                            
-                            // 添加到callback
-                            callback(fileList);
-                        }
-                        
-                        // 恢复链接状态
-                        urlLink.textContent = originalText;
-                        urlLink.style.color = '#4a6ee0';
-                        urlLink.style.cursor = 'pointer';
-                    })
-                    .catch(function(error) {
-                        alert('下载失败: ' + error.message);
-                        
-                        // 恢复链接状态
-                        urlLink.textContent = originalText;
-                        urlLink.style.color = '#4a6ee0';
-                        urlLink.style.cursor = 'pointer';
-                    });
-            }
-        });
-        
-        // 将链接添加到拖放框
-        dropZone.appendChild(urlLink);
-    }
-    
     modal.appendChild(dropZone);
     modal.appendChild(closeBtn);
     overlay.appendChild(modal);
@@ -1184,7 +1085,7 @@ parseFileBtn.addEventListener('click', function() {
         for (var j = 0; j < validFiles.length; j++) {
             parseTextFile(validFiles[j]);
         }
-    }, true, false);
+    }, true);
 });
 
 fileInput.addEventListener('change', function() {
@@ -1402,7 +1303,7 @@ selectFileBtn.addEventListener('click', function() {
                     reader.readAsDataURL(selectedFiles[index]);
                 })(i);
             }
-        }, true, true);
+        }, true);
     } else {
         // 删除所有选择的文件
         selectedFiles = [];
