@@ -404,13 +404,13 @@ function renderFilesList() {
 
         var isPreviewable = isPreviewableFile(file);
         var previewBtnHtml = isPreviewable ? 
-            '<button class="preview-btn" data-index="' + i + '">预览</button>' : '';
+            '<button class="preview-btn" style="position: relative; top: 2px;" data-index="' + i + '"><i style="position: relative; top: 0.5px;" class="fa fa-expand"></i></button>' : '';
             
             fileItem.innerHTML = '<div class="file-name" title="' + file.name + '">' + file.name +
             '</div><div class="file-actions">' +
             previewBtnHtml +
-            '<button class="download-btn" data-index="' + i + '">下载</button>' +
-            '<button class="delete-btn" data-index="' + i + '">删除</button>' +
+            '<button class="download-btn" style="position: relative; top: 2px;" data-index="' + i + '"><i style="position: relative; top: 1px;" class="fa fa-download"></i></button>' +
+            '<button class="delete-btn" style="position: relative; top: 2px;" data-index="' + i + '"><i style="position: relative; top: 0.2px;" class="fa fa-trash"></i></button></button>' +
             '</div>';
 
         filesContainer.appendChild(fileItem);
@@ -480,22 +480,26 @@ function createCustomModal(fileInfo) {
     
     // 创建关闭按钮
     var closeBtn = document.createElement('button');
-    closeBtn.textContent = '关闭';
-    closeBtn.style.cssText = 'position:relative;left:70%;bottom:10px;padding:8px 16px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;';
+    closeBtn.innerHTML = '<i class="fa fa-close"></i>';
+    closeBtn.style.cssText = 'position:absolute;font-size:19px;left:85%;top:19px;padding:1px 4px;background:rgba(0,0,0,0.0);color:#808080;border:none;border-radius:3px;cursor:pointer;';
     
     closeBtn.onmouseover = function() {
-        this.style.backgroundColor = '#3a5ed0';
+        this.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        this.style.color = 'white';
     };
     closeBtn.onmouseout = function() {
-        this.style.backgroundColor = '#4a6ee0';
+        this.style.backgroundColor = 'rgba(0,0,0,0.0)';
+        this.style.color = '#808080';
     };
     closeBtn.addEventListener('touchstart', function() {
-        this.style.backgroundColor = '#3a5ed0';
+        this.style.backgroundColor = 'rgba(0,0,0,0.5)';
         this.style.transform = 'translateY(0)';
+        this.style.color = 'white';
     });
     closeBtn.addEventListener('touchend', function() {
-        this.style.backgroundColor = '#4a6ee0';
+        this.style.backgroundColor = 'rgba(0,0,0,0.0)';
         this.style.transform = 'translateY(0)';
+        this.style.color = '#808080';
     });
     
     // 根据文件类型创建不同的预览内容
@@ -506,7 +510,7 @@ function createCustomModal(fileInfo) {
     // 创建标题
     var title = document.createElement('h3');
     title.textContent = '预览: ' + fileName;
-    title.style.cssText = 'margin-top:0;margin-bottom:15px;color:#333;';
+    title.style.cssText = 'margin-top:0;margin-bottom:15px;color:#333;max-width:180px;overflow:hidden;text-overflow:clip;white-space:nowrap;';
     
     content.appendChild(title);
     
@@ -582,8 +586,8 @@ function createCustomModal(fileInfo) {
     }
     
     // 组装弹窗
-    modal.appendChild(content);
     modal.appendChild(closeBtn);
+    modal.appendChild(content);
     overlay.appendChild(modal);
     
     // 添加到页面
@@ -653,8 +657,8 @@ function createFileDropModal(callback, multiple) {
     
     // 创建选择文件按钮
     var selectBtn = document.createElement('button');
-    selectBtn.textContent = '选择文件';
-    selectBtn.style.cssText = 'padding:10px 30px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;font-size:16px;';
+    selectBtn.innerHTML = '<i style="position: relative; right: 3px;" class="fa fa-folder-open"></i>' + '选择文件';
+    selectBtn.style.cssText = 'padding:10px 20px;background:#4a6ee0;color:white;border:none;border-radius:2px;cursor:pointer;font-size:16px;';
     
     selectBtn.onmouseover = function() {
         this.style.backgroundColor = '#3a5ed0';
@@ -673,8 +677,8 @@ function createFileDropModal(callback, multiple) {
     
     // 创建关闭按钮
     var closeBtn = document.createElement('button');
-    closeBtn.textContent = '关闭';
-    closeBtn.style.cssText = 'position:relative;left:38%;padding:8px 20px;background:#e05a5a;color:white;border:none;border-radius:2px;cursor:pointer;';
+    closeBtn.innerHTML = '<i style="font-size: 16px; margin-right: 4px;" class="fa fa-close"></i>' + '关闭';
+    closeBtn.style.cssText = 'position:relative;left:38%;padding:7px 11px;background:#e05a5a;color:white;border:none;border-radius:2px;cursor:pointer;';
     
     closeBtn.onmouseover = function() {
         this.style.backgroundColor = '#d04a4a';
@@ -973,6 +977,20 @@ function parseTextFile(file) {
 }
 
 parseBtn.addEventListener('click', function() {
+    var inputText = dataurlInput.value;
+    
+    // 添加fa-spin类名
+    var icon = this.querySelector('i');
+    if (icon && inputText.trim()) {
+        icon.classList.add('fa-spin');
+        // 1秒后移除fa-spin类名
+        setTimeout(function() {
+            if (icon && icon.classList.contains('fa-spin')) {
+                icon.classList.remove('fa-spin');
+            }
+        }, 1000);
+    }
+    
     var inputText = dataurlInput.value;
 
     if (!inputText.trim()) {
@@ -1315,7 +1333,7 @@ selectFileBtn.addEventListener('click', function() {
         selectFileBtn.textContent = '选择文件';
         selectFileBtn.id = 'select-file-btn';
         convertResultTextarea.value = '';
-        showToast('已删除所有选择文件');
+        showToast('已删除选择文件');
     }
 });
 

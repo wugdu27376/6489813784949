@@ -5,6 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DataURL/Blob 转下载链接工具</title>
     <link rel="stylesheet" href="misc-styles-code.css">
+    <script>
+    (function() {
+        var links = [
+            'https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css',
+            'https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.css',
+            'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.css',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css',
+            'https://unpkg.com/font-awesome@4.7.0/css/font-awesome.css'
+        ];
+        
+        var currentIndex = 0;
+        
+        function loadCSS(url) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = url;
+            
+            // 兼容低版本浏览器的 onerror 事件
+            link.onerror = function() {
+                // 移除加载失败的链接
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link);
+                }
+                
+                // 尝试下一个备用链接
+                currentIndex++;
+                if (currentIndex < links.length) {
+                    loadCSS(links[currentIndex]);
+                }
+            };
+            
+            // 使用 onload 来确认链接加载成功
+            link.onload = function() {
+                // 成功加载，不做任何操作
+            };
+            
+            document.head.appendChild(link);
+        }
+        
+        // 开始加载第一个链接
+        if (links.length > 0) {
+            loadCSS(links[0]);
+        }
+    })();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -16,7 +61,7 @@
         </div>
         
         <div class="button-row">
-            <button id="parse-btn">解析</button>
+            <button id="parse-btn"><span>解析</span><i style="margin-left: 3px;" class="fa fa-refresh"></i></button>
             
             <button type="button" id="parse-file-btn">解析文件</button>
             <input type="file" id="file-input" accept=".txt,.text,.json" multiple style="display: none;">
@@ -62,7 +107,7 @@
             <div class="save-option">
                 <label>
                     <input type="checkbox" id="save-as-file">
-                    保存为文本文件（勾选后点击上方按钮将保存为文本文件。若文件过大可以启用）
+                    保存为文本文件（若文件过大可以勾选）
                 </label>
             </div>
         </div>
